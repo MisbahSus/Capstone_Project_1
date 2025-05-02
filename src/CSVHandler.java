@@ -20,11 +20,25 @@ public class CSVHandler {
             String line;
             while ((line = br.readLine()) != null) {
                 String[] parts = line.split("\\|");
-                if (parts.length == 5) {
+                if (parts.length >= 5) { // Support both old and new format
                     try {
-                        Transaction t = new Transaction(
-                                parts[0], parts[1], parts[2], parts[3], Double.parseDouble(parts[4])
-                        );
+                        Transaction t;
+                        if (parts.length == 6) {
+                            // New format with balance
+                            t = new Transaction(
+                                    parts[0], parts[1], parts[2], parts[3],
+                                    Double.parseDouble(parts[4]), Double.parseDouble(parts[5])
+                            );
+                        } else {
+                            // Old format without balance - calculate it during loading
+                            double amount = Double.parseDouble(parts[4]);
+                            double prevBalance = transactions.isEmpty() ? 0 :
+                                    transactions.get(transactions.size() - 1).balance;
+                            t = new Transaction(
+                                    parts[0], parts[1], parts[2], parts[3], amount
+                            );
+                            t.balance = prevBalance + amount;
+                        }
                         transactions.add(t);
                     } catch (NumberFormatException e) {
                         System.out.println("Warning: Skipped invalid transaction record: " + line);
@@ -32,6 +46,18 @@ public class CSVHandler {
                 }
             }
             System.out.println("Loaded " + transactions.size() + " transactions.");
+
+            // Sort transactions by date/time before calculating balances
+            if (!transactions.isEmpty()) {
+                transactions.sort(Comparator.comparing((Transaction t) -> t.date + " " + t.time));
+
+                // Recalculate all balances to ensure consistency
+                double runningBalance = 0;
+                for (Transaction t : transactions) {
+                    runningBalance += t.amount;
+                    t.balance = runningBalance;
+                }
+            }
         } catch (IOException e) {
             System.out.println("Error reading transactions: " + e.getMessage());
         }
