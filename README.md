@@ -1,4 +1,5 @@
 // Main.java
+
 import java.util.Scanner;
 
 public class Main {
@@ -9,6 +10,7 @@ public class Main {
 }
 
 // ScreenManager.java
+
 import java.util.Scanner;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -228,6 +230,7 @@ public class ScreenManager {
 }
 
 // Transaction.java
+
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -267,6 +270,7 @@ public class Transaction {
 }
 
 // TransactionManager.java
+
 import java.util.*;
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -443,6 +447,7 @@ public class TransactionManager {
 }
 
 // CSVHandler.java
+
 import java.io.*;
 import java.util.*;
 import java.nio.file.*;
