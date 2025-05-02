@@ -11,14 +11,10 @@ public class CSVHandler {
             while ((line = br.readLine()) != null) {
                 String[] parts = line.split("\\|");
                 if (parts.length == 5) {
-                    try {
-                        Transaction t = new Transaction(
-                                parts[0], parts[1], parts[2], parts[3], Double.parseDouble(parts[4])
-                        );
-                        transactions.add(t);
-                    } catch (NumberFormatException e) {
-                        System.out.println("Warning: Invalid transaction record: " + line);
-                    }
+                    Transaction t = new Transaction(
+                            parts[0], parts[1], parts[2], parts[3], Double.parseDouble(parts[4])
+                    );
+                    transactions.add(t);
                 }
             }
         } catch (IOException e) {
@@ -34,7 +30,7 @@ public class CSVHandler {
                 bw.newLine();
             }
         } catch (IOException e) {
-            System.out.println("Error saving transactions: " + e.getMessage());
+            System.out.println("Error saving transactions.");
         }
     }
 }
