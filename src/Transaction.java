@@ -8,6 +8,7 @@ public class Transaction {
 
     public String date, time, description, vendor;
     public double amount;
+    public double balance;
 
     public Transaction(String date, String time, String description, String vendor, double amount) {
         this.date = date;
@@ -15,6 +16,16 @@ public class Transaction {
         this.description = description;
         this.vendor = vendor;
         this.amount = amount;
+        this.balance = 0;
+    }
+
+    public Transaction(String date, String time, String description, String vendor, double amount, double balance) {
+        this.date = date;
+        this.time = time;
+        this.description = description;
+        this.vendor = vendor;
+        this.amount = amount;
+        this.balance = balance;
     }
 
     @Override
