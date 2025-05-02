@@ -1,4 +1,4 @@
-// Main.java
+//Main.java
 import java.util.Scanner;
 
 public class Main {
@@ -8,12 +8,16 @@ public class Main {
     }
 }
 
-// ScreenManager.java
+//ScreenManager.java
 import java.util.Scanner;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class ScreenManager {
     private final Scanner scanner = new Scanner(System.in);
     private final TransactionManager manager = new TransactionManager();
+    private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
 
     public void showHomeScreen() {
         boolean running = true;
@@ -37,31 +41,29 @@ public class ScreenManager {
     }
 
     private void addTransaction(boolean isDeposit) {
-        try {
-            System.out.print("Date (yyyy-mm-dd): ");
-            String date = scanner.nextLine();
-            System.out.print("Time (HH:mm:ss): ");
-            String time = scanner.nextLine();
-            System.out.print("Description: ");
-            String description = scanner.nextLine();
-            System.out.print("Vendor: ");
-            String vendor = scanner.nextLine();
-            System.out.print("Amount: ");
-            double amount = Double.parseDouble(scanner.nextLine());
+        // Get current date and time
+        LocalDateTime now = LocalDateTime.now();
+        String currentDate = now.format(dateFormatter);
+        String currentTime = now.format(timeFormatter);
 
-            if (amount <= 0) {
-                System.out.println("Amount must be greater than zero.");
-                return;
-            }
+        System.out.print("Date (yyyy-MM-dd) [" + currentDate + "]: ");
+        String dateInput = scanner.nextLine().trim();
+        String date = dateInput.isEmpty() ? currentDate : dateInput;
 
-            if (!isDeposit) amount *= -1;
+        System.out.print("Time (HH:mm:ss) [" + currentTime + "]: ");
+        String timeInput = scanner.nextLine().trim();
+        String time = timeInput.isEmpty() ? currentTime : timeInput;
 
-            Transaction t = new Transaction(date, time, description, vendor, amount);
-            manager.addTransaction(t);
-            System.out.println("Transaction added successfully.");
-        } catch (NumberFormatException e) {
-            System.out.println("Invalid amount. Please enter a valid number.");
-        }
+        System.out.print("Description: ");
+        String description = scanner.nextLine();
+        System.out.print("Vendor: ");
+        String vendor = scanner.nextLine();
+        System.out.print("Amount: ");
+        double amount = Double.parseDouble(scanner.nextLine());
+        if (!isDeposit) amount *= -1;
+
+        Transaction t = new Transaction(date, time, description, vendor, amount);
+        manager.addTransaction(t);
     }
 
     private void showLedgerScreen() {
@@ -80,44 +82,14 @@ public class ScreenManager {
                 case "A" -> manager.listAllTransactions();
                 case "D" -> manager.listDeposits();
                 case "P" -> manager.listPayments();
-                case "R" -> showReportsScreen();
+                case "R" -> manager.showReports(scanner);
                 case "H" -> running = false;
                 default -> System.out.println("Invalid option.");
             }
         }
     }
-
-    private void showReportsScreen() {
-        boolean running = true;
-        while (running) {
-            System.out.println("\n--- Reports Screen ---");
-            System.out.println("1) Month To Date");
-            System.out.println("2) Previous Month");
-            System.out.println("3) Year To Date");
-            System.out.println("4) Previous Year");
-            System.out.println("5) Search by Vendor");
-            System.out.println("0) Back");
-            System.out.print("Choose an option: ");
-            String input = scanner.nextLine();
-
-            switch (input) {
-                case "1" -> manager.filterByMonthToDate();
-                case "2" -> manager.filterByPreviousMonth();
-                case "3" -> manager.filterByYearToDate();
-                case "4" -> manager.filterByPreviousYear();
-                case "5" -> {
-                    System.out.print("Enter vendor name: ");
-                    String vendor = scanner.nextLine();
-                    manager.searchByVendor(vendor);
-                }
-                case "0" -> running = false;
-                default -> System.out.println("Option not implemented yet.");
-            }
-        }
-    }
 }
-
-// Transaction.java
+//Transaction.java
 public class Transaction {
     public String date, time, description, vendor;
     public double amount;
@@ -134,23 +106,13 @@ public class Transaction {
     public String toString() {
         return date + "|" + time + "|" + description + "|" + vendor + "|" + amount;
     }
-
-    public String getDisplayString() {
-        String amountStr = String.format("$%.2f", amount);
-        return date + " | " + time + " | " + description + " | " + vendor + " | " + amountStr;
-    }
 }
-
-// TransactionManager.java
+//TransactionManager.java
 import java.util.*;
-import java.time.LocalDate;
-import java.time.YearMonth;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
+import java.util.stream.Collectors;
 
 public class TransactionManager {
     private List<Transaction> transactions = CSVHandler.loadTransactions();
-    private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     public void addTransaction(Transaction t) {
         transactions.add(t);
@@ -158,146 +120,48 @@ public class TransactionManager {
     }
 
     public void listAllTransactions() {
-        if (transactions.isEmpty()) {
-            System.out.println("No transactions found.");
-            return;
-        }
-
-        System.out.println("\n--- All Transactions ---");
         transactions.stream()
                 .sorted(Comparator.comparing((Transaction t) -> t.date + " " + t.time).reversed())
-                .forEach(t -> System.out.println(t.getDisplayString()));
-
-        printBalance();
+                .forEach(System.out::println);
     }
 
     public void listDeposits() {
-        if (transactions.isEmpty()) {
-            System.out.println("No transactions found.");
-            return;
-        }
-
-        System.out.println("\n--- Deposits ---");
-        transactions.stream()
-                .filter(t -> t.amount > 0)
+        transactions.stream().filter(t -> t.amount > 0)
                 .sorted(Comparator.comparing((Transaction t) -> t.date + " " + t.time).reversed())
-                .forEach(t -> System.out.println(t.getDisplayString()));
+                .forEach(System.out::println);
     }
 
     public void listPayments() {
-        if (transactions.isEmpty()) {
-            System.out.println("No transactions found.");
-            return;
-        }
-
-        System.out.println("\n--- Payments ---");
-        transactions.stream()
-                .filter(t -> t.amount < 0)
+        transactions.stream().filter(t -> t.amount < 0)
                 .sorted(Comparator.comparing((Transaction t) -> t.date + " " + t.time).reversed())
-                .forEach(t -> System.out.println(t.getDisplayString()));
+                .forEach(System.out::println);
     }
 
-    public void searchByVendor(String vendor) {
-        System.out.println("\n--- Transactions for vendor: " + vendor + " ---");
+    public void showReports(Scanner scanner) {
+        System.out.println("\n--- Reports Screen ---");
+        System.out.println("1) Month To Date");
+        System.out.println("2) Previous Month");
+        System.out.println("3) Year To Date");
+        System.out.println("4) Previous Year");
+        System.out.println("5) Search by Vendor");
+        System.out.println("0) Back");
+        System.out.print("Choose an option: ");
+        String input = scanner.nextLine();
 
-        boolean found = false;
-        for (Transaction t : transactions) {
-            if (t.vendor.toLowerCase().contains(vendor.toLowerCase())) {
-                System.out.println(t.getDisplayString());
-                found = true;
+        switch (input) {
+            case "5" -> {
+                System.out.print("Enter vendor name: ");
+                String vendor = scanner.nextLine();
+                transactions.stream()
+                        .filter(t -> t.vendor.equalsIgnoreCase(vendor))
+                        .forEach(System.out::println);
             }
+            case "0" -> {}
+            default -> System.out.println("Option not yet implemented.");
         }
-
-        if (!found) {
-            System.out.println("No transactions found for this vendor.");
-        }
-    }
-
-    public void filterByMonthToDate() {
-        try {
-            LocalDate today = LocalDate.now();
-            LocalDate startOfMonth = today.withDayOfMonth(1);
-
-            System.out.println("\n--- Month To Date Transactions ---");
-            filterByDateRange(startOfMonth.format(dateFormatter), today.format(dateFormatter));
-        } catch (Exception e) {
-            System.out.println("Error generating report: " + e.getMessage());
-        }
-    }
-
-    public void filterByPreviousMonth() {
-        try {
-            LocalDate today = LocalDate.now();
-            YearMonth previousMonth = YearMonth.from(today).minusMonths(1);
-            LocalDate startDate = previousMonth.atDay(1);
-            LocalDate endDate = previousMonth.atEndOfMonth();
-
-            System.out.println("\n--- Previous Month Transactions ---");
-            filterByDateRange(startDate.format(dateFormatter), endDate.format(dateFormatter));
-        } catch (Exception e) {
-            System.out.println("Error generating report: " + e.getMessage());
-        }
-    }
-
-    public void filterByYearToDate() {
-        try {
-            LocalDate today = LocalDate.now();
-            LocalDate startOfYear = today.withDayOfYear(1);
-
-            System.out.println("\n--- Year To Date Transactions ---");
-            filterByDateRange(startOfYear.format(dateFormatter), today.format(dateFormatter));
-        } catch (Exception e) {
-            System.out.println("Error generating report: " + e.getMessage());
-        }
-    }
-
-    public void filterByPreviousYear() {
-        try {
-            int previousYear = LocalDate.now().getYear() - 1;
-            String startDate = previousYear + "-01-01";
-            String endDate = previousYear + "-12-31";
-
-            System.out.println("\n--- Previous Year Transactions ---");
-            filterByDateRange(startDate, endDate);
-        } catch (Exception e) {
-            System.out.println("Error generating report: " + e.getMessage());
-        }
-    }
-
-    private void filterByDateRange(String startDateStr, String endDateStr) {
-        try {
-            LocalDate startDate = LocalDate.parse(startDateStr, dateFormatter);
-            LocalDate endDate = LocalDate.parse(endDateStr, dateFormatter);
-
-            boolean found = false;
-            for (Transaction t : transactions) {
-                try {
-                    LocalDate transactionDate = LocalDate.parse(t.date, dateFormatter);
-
-                    if (!transactionDate.isBefore(startDate) && !transactionDate.isAfter(endDate)) {
-                        System.out.println(t.getDisplayString());
-                        found = true;
-                    }
-                } catch (DateTimeParseException e) {
-                    // Skip transactions with invalid dates
-                }
-            }
-
-            if (!found) {
-                System.out.println("No transactions found in this date range.");
-            }
-        } catch (DateTimeParseException e) {
-            System.out.println("Invalid date format.");
-        }
-    }
-
-    private void printBalance() {
-        double balance = transactions.stream().mapToDouble(t -> t.amount).sum();
-        System.out.println("\nCurrent Balance: $" + String.format("%.2f", balance));
     }
 }
-
-// CSVHandler.java
+//CSVHandler.java
 import java.io.*;
 import java.util.*;
 
@@ -311,14 +175,10 @@ public class CSVHandler {
             while ((line = br.readLine()) != null) {
                 String[] parts = line.split("\\|");
                 if (parts.length == 5) {
-                    try {
-                        Transaction t = new Transaction(
-                                parts[0], parts[1], parts[2], parts[3], Double.parseDouble(parts[4])
-                        );
-                        transactions.add(t);
-                    } catch (NumberFormatException e) {
-                        System.out.println("Warning: Invalid transaction record: " + line);
-                    }
+                    Transaction t = new Transaction(
+                            parts[0], parts[1], parts[2], parts[3], Double.parseDouble(parts[4])
+                    );
+                    transactions.add(t);
                 }
             }
         } catch (IOException e) {
@@ -334,11 +194,7 @@ public class CSVHandler {
                 bw.newLine();
             }
         } catch (IOException e) {
-            System.out.println("Error saving transactions: " + e.getMessage());
-        }
-    }
-}
-            }
+            System.out.println("Error saving transactions.");
         }
     }
 }
