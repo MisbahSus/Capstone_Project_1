@@ -14,6 +14,7 @@ public class ScreenManager {
         boolean running = true;
         while (running) {
             System.out.println("\n=== Personal Finance Tracker ===");
+            System.out.printf("Current Balance: $%,.2f%n", manager.getCurrentBalance());
             System.out.println("D) Add Deposit");
             System.out.println("P) Make Payment (Debit)");
             System.out.println("L) Ledger");
