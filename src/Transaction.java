@@ -14,9 +14,4 @@ public class Transaction {
     public String toString() {
         return date + "|" + time + "|" + description + "|" + vendor + "|" + amount;
     }
-
-    public String getDisplayString() {
-        String amountStr = String.format("$%.2f", amount);
-        return date + " | " + time + " | " + description + " | " + vendor + " | " + amountStr;
-    }
 }
