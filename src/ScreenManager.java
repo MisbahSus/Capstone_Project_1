@@ -1,8 +1,12 @@
 import java.util.Scanner;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class ScreenManager {
     private final Scanner scanner = new Scanner(System.in);
     private final TransactionManager manager = new TransactionManager();
+    private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
 
     public void showHomeScreen() {
         boolean running = true;
@@ -26,31 +30,29 @@ public class ScreenManager {
     }
 
     private void addTransaction(boolean isDeposit) {
-        try {
-            System.out.print("Date (yyyy-mm-dd): ");
-            String date = scanner.nextLine();
-            System.out.print("Time (HH:mm:ss): ");
-            String time = scanner.nextLine();
-            System.out.print("Description: ");
-            String description = scanner.nextLine();
-            System.out.print("Vendor: ");
-            String vendor = scanner.nextLine();
-            System.out.print("Amount: ");
-            double amount = Double.parseDouble(scanner.nextLine());
+        // Get current date and time
+        LocalDateTime now = LocalDateTime.now();
+        String currentDate = now.format(dateFormatter);
+        String currentTime = now.format(timeFormatter);
 
-            if (amount <= 0) {
-                System.out.println("Amount must be greater than zero.");
-                return;
-            }
+        System.out.print("Date (yyyy-MM-dd) [" + currentDate + "]: ");
+        String dateInput = scanner.nextLine().trim();
+        String date = dateInput.isEmpty() ? currentDate : dateInput;
 
-            if (!isDeposit) amount *= -1;
+        System.out.print("Time (HH:mm:ss) [" + currentTime + "]: ");
+        String timeInput = scanner.nextLine().trim();
+        String time = timeInput.isEmpty() ? currentTime : timeInput;
 
-            Transaction t = new Transaction(date, time, description, vendor, amount);
-            manager.addTransaction(t);
-            System.out.println("Transaction added successfully.");
-        } catch (NumberFormatException e) {
-            System.out.println("Invalid amount. Please enter a valid number.");
-        }
+        System.out.print("Description: ");
+        String description = scanner.nextLine();
+        System.out.print("Vendor: ");
+        String vendor = scanner.nextLine();
+        System.out.print("Amount: ");
+        double amount = Double.parseDouble(scanner.nextLine());
+        if (!isDeposit) amount *= -1;
+
+        Transaction t = new Transaction(date, time, description, vendor, amount);
+        manager.addTransaction(t);
     }
 
     private void showLedgerScreen() {
@@ -69,38 +71,9 @@ public class ScreenManager {
                 case "A" -> manager.listAllTransactions();
                 case "D" -> manager.listDeposits();
                 case "P" -> manager.listPayments();
-                case "R" -> showReportsScreen();
+                case "R" -> manager.showReports(scanner);
                 case "H" -> running = false;
                 default -> System.out.println("Invalid option.");
-            }
-        }
-    }
-
-    private void showReportsScreen() {
-        boolean running = true;
-        while (running) {
-            System.out.println("\n--- Reports Screen ---");
-            System.out.println("1) Month To Date");
-            System.out.println("2) Previous Month");
-            System.out.println("3) Year To Date");
-            System.out.println("4) Previous Year");
-            System.out.println("5) Search by Vendor");
-            System.out.println("0) Back");
-            System.out.print("Choose an option: ");
-            String input = scanner.nextLine();
-
-            switch (input) {
-                case "1" -> manager.filterByMonthToDate();
-                case "2" -> manager.filterByPreviousMonth();
-                case "3" -> manager.filterByYearToDate();
-                case "4" -> manager.filterByPreviousYear();
-                case "5" -> {
-                    System.out.print("Enter vendor name: ");
-                    String vendor = scanner.nextLine();
-                    manager.searchByVendor(vendor);
-                }
-                case "0" -> running = false;
-                default -> System.out.println("Option not implemented yet.");
             }
         }
     }
